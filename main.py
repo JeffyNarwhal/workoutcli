@@ -1,5 +1,9 @@
 import csv, os, cmd, datetime
+from rich.console import Console
+from rich.table import Table
+
 filename = "data.csv"
+console = Console()
 
 class FileManagerCLI(cmd.Cmd):
     prompt = "WorkoutCli>> "
@@ -62,6 +66,29 @@ class FileManagerCLI(cmd.Cmd):
                         x += 1
                         continue
                     print(row, end="")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def do_workoutstable(self, line):
+        """Prints all workouts, but in a table"""
+        table = Table(title = "Workouts")
+        rows = []
+        columns = []
+        x = 0
+        try:
+            with open(filename, "r") as file:
+                for row in file:
+                    y = row.split(",")
+                    if (x == 0):
+                        x += 1
+                        columns = y
+                        continue
+                    rows.append(y)
+            for column in columns:
+                table.add_column(column)
+            for row in rows:
+                table.add_row(*row, style='bright_green')
+            console.print(table)
         except Exception as e:
             print(f"Error: {e}")
     
