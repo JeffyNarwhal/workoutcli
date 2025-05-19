@@ -1,10 +1,11 @@
 import csv, os, cmd, datetime
 from rich.console import Console
 from rich.table import Table
-import pandas as pandasForSortingCSV
+import pandas as pd
 
 filename = "data.csv"
 console = Console()
+pd.set_option('display.max_rows', 900)
 
 class FileManagerCLI(cmd.Cmd):
     prompt = "WorkoutCli>> "
@@ -24,22 +25,67 @@ class FileManagerCLI(cmd.Cmd):
             print(f"Error: {e}")
 
     def do_add(self, line):
-        """Adds a workout\nFormat: Exercise (If its named like "Bench Press", seperate with a -) Reps Weight Date (YYYY-MM-DD)"""
-        line = line.split(" ")
-        line[0] = line[0].replace("-", " ")
+        """Adds a workout
+        Format: add "Exercise Name" Reps Weight [Date (YYYY-MM-DD)]
+        Example: add "Bench Press" 8 135 2025-05-19
+                 add "Squat" 5 225 (uses today's date)"""
+        # Split input while respecting quoted strings
         try:
-            line[3]
-        except:
-            line.append(datetime.date.today())
+            # Use shlex to handle quoted strings (e.g., "Bench Press")
+            import shlex
+            args = shlex.split(line)
+        except ValueError:
+            print("Error: Invalid input format. Use quotes for multi-word exercises.")
+            return
+
+        # Validate number of arguments
+        if len(args) < 3 or len(args) > 4:
+            print("Error: Expected format: add \"Exercise Name\" Reps Weight [Date]")
+            return
+
+        # Extract arguments
+        exercise = args[0]
         try:
-            with open (filename, "a", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerow([line[0], line[1], line[2], line[3]])
-                print(f"Added {line[0], line[1], line[2], line[3]}")
-        except FileNotFoundError:
-            print(f"File '{filename}' not found.")
+            reps = int(args[1])  # Ensure reps is an integer
+            weight = float(args[2])  # Ensure weight is a number
+        except ValueError:
+            print("Error: Reps and Weight must be numbers.")
+            return
+
+        # Handle date (default to today if not provided)
+        if len(args) == 4:
+            try:
+                date = pd.to_datetime(args[3]).date()  # Validate and convert to date
+            except ValueError:
+                print("Error: Invalid date format. Use YYYY-MM-DD.")
+                return
+        else:
+            date = datetime.date.today()
+
+        # Create a new row as a DataFrame
+        new_row = pd.DataFrame({
+            'Exercise': [exercise],
+            'Reps': [reps],
+            'Weight': [weight],
+            'Date': [date]
+        })
+
+        try:
+            # Check if file exists
+            if os.path.exists(filename):
+                # Read existing CSV
+                df = pd.read_csv(filename)
+                # Append new row
+                df = pd.concat([df, new_row], ignore_index=True)
+            else:
+                # If file doesn't exist, use new_row as the DataFrame
+                df = new_row
+
+            # Write back to CSV
+            df.to_csv(filename, index=False)
+            print(f"Added: {exercise}, {reps} reps, {weight} lbs, {date}")
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error writing to file: {e}")
     
     def do_exercises(self, line):
         """Prints Exercises"""
@@ -57,24 +103,25 @@ class FileManagerCLI(cmd.Cmd):
         except Exception as e:
             print(f"Error: {e}")
 
-    def do_workouts(self, line):
+    def do_view(self, line):
         """Prints workouts"""
-        print(pandasForSortingCSV.read_csv("data.csv"))
+        print(pd.read_csv(filename))
     
     def do_sort(sort, line):
         """Sorts"""
         try:
-            csvData = pandasForSortingCSV.read_csv("data.csv")
-            csvData.sort_values(["Exercise"], 
+            csvData = pd.read_csv(filename)
+            csvData.sort_values([line], 
                                 axis=0,
                                 ascending=[True], 
                                 inplace=True)
             csvData.to_csv(filename, index=0)
         except Exception as e:
             print(f"Error: {e}")
-    
-    def do_prs(self, line):
-        """Lists 1 rep prs of the exercise, starting with the highest. Inludes date"""
+
+    def do_clear(self, arg):
+        """Clear the terminal screen."""
+        os.system('cls')
 
     def do_quit(self, line):
         """Exit the CLI."""
