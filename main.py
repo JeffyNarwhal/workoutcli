@@ -1,6 +1,8 @@
-import csv, os, cmd, datetime
+import os, cmd, datetime
 import pandas as pd
 import shlex
+import tkinter as tk
+from tkinter import filedialog
 
 filename = "data.csv"
 pd.set_option('display.max_rows', 900)
@@ -147,6 +149,17 @@ class FileManagerCLI(cmd.Cmd):
         """Import CSV file"""
         try:
             pd.concat([pd.read_csv(filename), pd.read_csv(line)]).to_csv(filename, index=0)
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def do_export(self, line):
+        """Export CSV file"""
+        try:
+            csvData = pd.read_csv(filename)
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            file_path = filedialog.asksaveasfilename(defaultextension="csv")
+            csvData.to_csv(file_path, index=0)
         except Exception as e:
             print(f"Error: {e}")
 
