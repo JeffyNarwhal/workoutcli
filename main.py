@@ -1,6 +1,7 @@
 import csv, os, cmd, datetime
 from rich.console import Console
 from rich.table import Table
+import pandas as pandasForSortingCSV
 
 filename = "data.csv"
 console = Console()
@@ -57,38 +58,18 @@ class FileManagerCLI(cmd.Cmd):
             print(f"Error: {e}")
 
     def do_workouts(self, line):
-        """Prints all workouts"""
-        x = 0
+        """Prints workouts"""
+        print(pandasForSortingCSV.read_csv("data.csv"))
+    
+    def do_sort(sort, line):
+        """Sorts"""
         try:
-            with open(filename, "r") as file:
-                for row in file:
-                    if (x == 0):
-                        x += 1
-                        continue
-                    print(row, end="")
-        except Exception as e:
-            print(f"Error: {e}")
-
-    def do_workoutstable(self, line):
-        """Prints all workouts, but in a table"""
-        table = Table(title = "Workouts")
-        rows = []
-        columns = []
-        x = 0
-        try:
-            with open(filename, "r") as file:
-                for row in file:
-                    y = row.split(",")
-                    if (x == 0):
-                        x += 1
-                        columns = y
-                        continue
-                    rows.append(y)
-            for column in columns:
-                table.add_column(column)
-            for row in rows:
-                table.add_row(*row, style='bright_green')
-            console.print(table)
+            csvData = pandasForSortingCSV.read_csv("data.csv")
+            csvData.sort_values(["Exercise"], 
+                                axis=0,
+                                ascending=[True], 
+                                inplace=True)
+            csvData.to_csv(filename, index=0)
         except Exception as e:
             print(f"Error: {e}")
     
