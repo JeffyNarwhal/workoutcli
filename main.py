@@ -19,7 +19,7 @@ class FileManagerCLI(cmd.Cmd):
             print(f"Error: {e}")
 
     def do_add(self, line):
-        """Adds a workout"""
+        """Adds a workout\nFormat: Exercise (If its named like "Bench Press", seperate with a -) Reps Weight Date (YYYY-MM-DD)"""
         line = line.split(" ")
         line[0] = line[0].replace("-", " ")
         try:
@@ -37,7 +37,7 @@ class FileManagerCLI(cmd.Cmd):
             print(f"Error: {e}")
     
     def do_exercises(self, line):
-        """Lists Exercises"""
+        """Prints Exercises"""
         exercises = set()
         try:
             with open(filename, "r") as file:
@@ -46,13 +46,27 @@ class FileManagerCLI(cmd.Cmd):
                     if (x[0] == "Exercise"):
                         continue
                     exercises.add(x[0])
+            exercises = sorted(exercises)
             for exercise in exercises:
                 print(exercise)
         except Exception as e:
             print(f"Error: {e}")
 
+    def do_workouts(self, line):
+        """Prints all workouts"""
+        x = 0
+        try:
+            with open(filename, "r") as file:
+                for row in file:
+                    if (x == 0):
+                        x += 1
+                        continue
+                    print(row, end="")
+        except Exception as e:
+            print(f"Error: {e}")
+    
     def do_prs(self, line):
-        """Lists prs of exercise, starting with the highest. Inludes date"""
+        """Lists 1 rep prs of the exercise, starting with the highest. Inludes date"""
 
     def do_quit(self, line):
         """Exit the CLI."""
