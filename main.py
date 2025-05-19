@@ -71,9 +71,9 @@ class FileManagerCLI(cmd.Cmd):
 
     def do_view(self, line):
         """View workouts with optional filters
-        Format: view [Column=Value] [Column=Value] ...
-        Example: view Exercise="Bench Press"
-                 view Exercise="Bench Press" Reps=8
+        Format: view [Column:Value] [Column:Value] ...
+        Example: view Exercise:"Bench Press"
+                 view Exercise:"Bench Press" Reps:8
                  view (shows all workouts)"""
         try:
             if not os.path.exists(filename):
@@ -88,14 +88,14 @@ class FileManagerCLI(cmd.Cmd):
             try:
                 args = shlex.split(line)
             except ValueError:
-                print("Error: Invalid input format. Use quotes for multi-word values (e.g., Exercise=\"Bench Press\").")
+                print("Error: Invalid input format. Use quotes for multi-word values (e.g., Exercise:\"Bench Press\").")
                 return
             filters = {}
             for arg in args:
-                if '=' not in arg:
-                    print(f"Error: Invalid filter format in '{arg}'. Use Column=Value.")
+                if ':' not in arg:
+                    print(f"Error: Invalid filter format in '{arg}'. Use Column:Value.")
                     return
-                column, value = arg.split('=', 1)
+                column, value = arg.split(':', 1)
                 if column not in df.columns:
                     print(f"Error: Column '{column}' not found in CSV.")
                     return
