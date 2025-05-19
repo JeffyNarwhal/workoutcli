@@ -1,10 +1,8 @@
 import csv, os, cmd, datetime
-from rich.console import Console
-from rich.table import Table
 import pandas as pd
+import shlex
 
 filename = "data.csv"
-console = Console()
 pd.set_option('display.max_rows', 900)
 
 class FileManagerCLI(cmd.Cmd):
@@ -32,7 +30,6 @@ class FileManagerCLI(cmd.Cmd):
         # Split input while respecting quoted strings
         try:
             # Use shlex to handle quoted strings (e.g., "Bench Press")
-            import shlex
             args = shlex.split(line)
         except ValueError:
             print("Error: Invalid input format. Use quotes for multi-word exercises.")
@@ -86,34 +83,83 @@ class FileManagerCLI(cmd.Cmd):
             print(f"Added: {exercise}, {reps} reps, {weight} lbs, {date}")
         except Exception as e:
             print(f"Error writing to file: {e}")
-    
-    def do_exercises(self, line):
-        """Prints Exercises"""
-        exercises = set()
-        try:
-            with open(filename, "r") as file:
-                for row in file:
-                    x = row.split(",")
-                    if (x[0] == "Exercise"):
-                        continue
-                    exercises.add(x[0])
-            exercises = sorted(exercises)
-            for exercise in exercises:
-                print(exercise)
-        except Exception as e:
-            print(f"Error: {e}")
 
     def do_view(self, line):
-        """Prints workouts"""
-        print(pd.read_csv(filename))
+        """View workouts with optional filters
+        Format: view [Column=Value] [Column=Value] ...
+        Example: view Exercise="Bench Press"
+                 view Exercise="Bench Press" Reps=8
+                 view (shows all workouts)"""
+        try:
+            # Check if file exists
+            if not os.path.exists(filename):
+                print(f"Error: File '{filename}' not found.")
+                return
+
+            # Read the CSV
+            df = pd.read_csv(filename)
+
+            # If no filters provided, show all rows
+            if not line.strip():
+                print(df.to_string(index=False))
+                return
+
+            # Parse filters using shlex to handle quoted strings
+            try:
+                args = shlex.split(line)
+            except ValueError:
+                print("Error: Invalid input format. Use quotes for multi-word values (e.g., Exercise=\"Bench Press\").")
+                return
+
+            # Validate and extract filters
+            filters = {}
+            for arg in args:
+                if '=' not in arg:
+                    print(f"Error: Invalid filter format in '{arg}'. Use Column=Value.")
+                    return
+                column, value = arg.split('=', 1)  # Split on first '=' only
+                if column not in df.columns:
+                    print(f"Error: Column '{column}' not found in CSV.")
+                    return
+                filters[column] = value
+
+            # Apply filters
+            filtered_df = df.copy()
+            for column, value in filters.items():
+                # Convert value to appropriate type based on column
+                if column in ['Reps', 'Weight']:
+                    try:
+                        value = float(value)  # Allow integers or floats
+                        filtered_df = filtered_df[filtered_df[column] == value]
+                    except ValueError:
+                        print(f"Error: Value '{value}' for '{column}' must be a number.")
+                        return
+                elif column == 'Date':
+                    try:
+                        value = pd.to_datetime(value).date()  # Convert to date
+                        filtered_df = filtered_df[filtered_df[column] == str(value)]
+                    except ValueError:
+                        print(f"Error: Invalid date format for '{column}'. Use YYYY-MM-DD.")
+                        return
+                else:  # Exercise or other string columns
+                    filtered_df = filtered_df[filtered_df[column] == value]
+
+            # Display results
+            if filtered_df.empty:
+                print("No workouts match the specified filters.")
+            else:
+                print(filtered_df.to_string(index=False))
+
+        except Exception as e:
+            print(f"Error: {e}")
     
     def do_sort(sort, line):
         """Sorts"""
         try:
             csvData = pd.read_csv(filename)
-            csvData.sort_values([line], 
+            csvData.sort_values(line, 
                                 axis=0,
-                                ascending=[True], 
+                                ascending=False, 
                                 inplace=True)
             csvData.to_csv(filename, index=0)
         except Exception as e:
