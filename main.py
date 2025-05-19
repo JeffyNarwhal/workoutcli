@@ -76,65 +76,54 @@ class FileManagerCLI(cmd.Cmd):
                  view Exercise="Bench Press" Reps=8
                  view (shows all workouts)"""
         try:
-            # Check if file exists
             if not os.path.exists(filename):
                 print(f"Error: File '{filename}' not found.")
                 return
-
-            # Read the CSV
             df = pd.read_csv(filename)
-
-            # If no filters provided, show all rows
             if not line.strip():
-                print(df.to_string(index=False))
+                # No filters: mimic print(pd.read_csv(filename))
+                print(df)
                 return
-
-            # Parse filters using shlex to handle quoted strings
+            # Apply filters
             try:
                 args = shlex.split(line)
             except ValueError:
                 print("Error: Invalid input format. Use quotes for multi-word values (e.g., Exercise=\"Bench Press\").")
                 return
-
-            # Validate and extract filters
             filters = {}
             for arg in args:
                 if '=' not in arg:
                     print(f"Error: Invalid filter format in '{arg}'. Use Column=Value.")
                     return
-                column, value = arg.split('=', 1)  # Split on first '=' only
+                column, value = arg.split('=', 1)
                 if column not in df.columns:
                     print(f"Error: Column '{column}' not found in CSV.")
                     return
                 filters[column] = value
-
-            # Apply filters
             filtered_df = df.copy()
             for column, value in filters.items():
-                # Convert value to appropriate type based on column
                 if column in ['Reps', 'Weight']:
                     try:
-                        value = float(value)  # Allow integers or floats
+                        value = float(value)
                         filtered_df = filtered_df[filtered_df[column] == value]
                     except ValueError:
                         print(f"Error: Value '{value}' for '{column}' must be a number.")
                         return
                 elif column == 'Date':
                     try:
-                        value = pd.to_datetime(value).date()  # Convert to date
+                        value = pd.to_datetime(value).date()
                         filtered_df = filtered_df[filtered_df[column] == str(value)]
                     except ValueError:
                         print(f"Error: Invalid date format for '{column}'. Use YYYY-MM-DD.")
                         return
-                else:  # Exercise or other string columns
+                else:
                     filtered_df = filtered_df[filtered_df[column] == value]
-
-            # Display results
             if filtered_df.empty:
                 print("No workouts match the specified filters.")
             else:
-                print(filtered_df.to_string(index=False))
-
+                # Reset index to start from 0 for filtered results
+                filtered_df = filtered_df.reset_index(drop=True)
+                print(filtered_df)
         except Exception as e:
             print(f"Error: {e}")
     
@@ -150,9 +139,16 @@ class FileManagerCLI(cmd.Cmd):
         except Exception as e:
             print(f"Error: {e}")
 
-    def do_clear(self, arg):
+    def do_clear(self, line):
         """Clear the terminal screen."""
         os.system('cls')
+
+    def do_import(self, line):
+        """Import CSV file"""
+        try:
+            pd.concat([pd.read_csv(filename), pd.read_csv(line)]).to_csv(filename, index=0)
+        except Exception as e:
+            print(f"Error: {e}")
 
     def do_quit(self, line):
         """Exit the CLI."""
