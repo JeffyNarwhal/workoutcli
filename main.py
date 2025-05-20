@@ -158,7 +158,7 @@ class FileManagerCLI(cmd.Cmd):
             csvData = pd.read_csv(self.filename)
             root = tk.Tk()
             root.withdraw()  # Hide the main window
-            file_path = filedialog.asksaveasself.filename(defaultextension="csv")
+            file_path = filedialog.asksaveas.filename(defaultextension="csv")
             csvData.to_csv(file_path, index=0)
         except Exception as e:
             print(f"Error: {e}")
