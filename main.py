@@ -4,23 +4,23 @@ import shlex
 import tkinter as tk
 from tkinter import filedialog
 
-filename = "data.csv"
 pd.set_option('display.max_rows', 900)
 
 class FileManagerCLI(cmd.Cmd):
-    prompt = "WorkoutCli>> "
+    prompt = "WorkoutCli/data>> "
     intro = 'Welcome to WorkoutCLI. Type "help" for available commands.'
+    filename = "./csv/data.csv"
 
     def __init__(self):
         super().__init__()
         self.current_directory = os.path.dirname(os.path.realpath(__file__)) # Sets directory to file directory so creating the csv works
-        if not os.path.exists(filename):
+        if not os.path.exists(self.filename):
             try:
                 # Create an empty DataFrame with the desired columns
                 df = pd.DataFrame(columns=["Exercise", "Reps", "Weight", "Date"])
                 # Save to CSV without index
-                df.to_csv(filename, index=False)
-                print(f"Created new CSV file: {filename}")
+                df.to_csv(self.filename, index=False)
+                print(f"Created new CSV file: {self.filename}")
             except Exception as e:
                 print(f"Error creating CSV file: {e}")
 
@@ -55,8 +55,8 @@ class FileManagerCLI(cmd.Cmd):
                 'Weight': [weight],
                 'Date': [date]
             })
-            if os.path.exists(filename):
-                df = pd.read_csv(filename)
+            if os.path.exists(self.filename):
+                df = pd.read_csv(self.filename)
                 if df.empty:
                     # If the CSV is empty (only headers), use new_row directly
                     df = new_row
@@ -66,7 +66,7 @@ class FileManagerCLI(cmd.Cmd):
             else:
                 # If file doesn't exist, use new_row (shouldn't happen due to __init__)
                 df = new_row
-            df.to_csv(filename, index=False)
+            df.to_csv(self.filename, index=False)
             print(f"Added: {exercise}, {reps} reps, {weight} lbs, {date}")
         except Exception as e:
             print(f"Error writing to file: {e}")
@@ -78,12 +78,12 @@ class FileManagerCLI(cmd.Cmd):
                  view Exercise:"Bench Press" Reps:8
                  view (shows all workouts)"""
         try:
-            if not os.path.exists(filename):
-                print(f"Error: File '{filename}' not found.")
+            if not os.path.exists(self.filename):
+                print(f"Error: File '{self.filename}' not found.")
                 return
-            df = pd.read_csv(filename)
+            df = pd.read_csv(self.filename)
             if not line.strip():
-                # No filters: mimic print(pd.read_csv(filename))
+                # No filters: mimic print(pd.read_csv(self.filename))
                 print(df)
                 return
             # Apply filters
@@ -129,15 +129,15 @@ class FileManagerCLI(cmd.Cmd):
         except Exception as e:
             print(f"Error: {e}")
     
-    def do_sort(sort, line):
+    def do_sort(self, line):
         """Sorts"""
         try:
-            csvData = pd.read_csv(filename)
+            csvData = pd.read_csv(self.filename)
             csvData.sort_values(line, 
                                 axis=0,
                                 ascending=False, 
                                 inplace=True)
-            csvData.to_csv(filename, index=0)
+            csvData.to_csv(self.filename, index=0)
         except Exception as e:
             print(f"Error: {e}")
 
@@ -145,21 +145,42 @@ class FileManagerCLI(cmd.Cmd):
         """Clear the terminal screen."""
         os.system('cls')
 
-    def do_import(self, line):
-        """Import CSV file"""
+    def do_merge(self, line):
+        """Merges CSV file"""
         try:
-            pd.concat([pd.read_csv(filename), pd.read_csv(line)]).to_csv(filename, index=0)
+            pd.concat([pd.read_csv(self.filename), pd.read_csv(line)]).to_csv(self.filename, index=0)
         except Exception as e:
             print(f"Error: {e}")
 
     def do_export(self, line):
         """Export CSV file"""
         try:
-            csvData = pd.read_csv(filename)
+            csvData = pd.read_csv(self.filename)
             root = tk.Tk()
             root.withdraw()  # Hide the main window
-            file_path = filedialog.asksaveasfilename(defaultextension="csv")
+            file_path = filedialog.asksaveasself.filename(defaultextension="csv")
             csvData.to_csv(file_path, index=0)
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def do_files(self, line):
+        """List csv files"""
+        try:
+            items = os.listdir("csv/")
+            for item in items:
+                print(item[0:-4])
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def do_open(self, line):
+        """Opens a select csv file"""
+        try:
+            items = os.listdir("csv/")
+            for item in items:
+                if (item[0:-4] == line):
+                    self.filename = "./csv/" + line + ".csv"
+                    self.prompt = "WorkoutCli/" + line + ">> "
+                    break
         except Exception as e:
             print(f"Error: {e}")
 
