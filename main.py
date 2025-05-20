@@ -180,7 +180,8 @@ class FileManagerCLI(cmd.Cmd):
                 if (item[0:-4] == line):
                     self.filename = "./csv/" + line + ".csv"
                     self.prompt = "WorkoutCli/" + line + ">> "
-                    break
+                    return
+            raise Exception("Invalid csv file, type \"files\" to see csv files")
         except Exception as e:
             print(f"Error: {e}")
 
